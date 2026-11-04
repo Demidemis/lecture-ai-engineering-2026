@@ -8,6 +8,8 @@ import json
 import random
 from functools import cache
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MAX_RESULTS = 3
@@ -101,3 +103,20 @@ def make_quiz(lecture: int) -> str:
         },
         ensure_ascii=False,
     )
+
+def save_learning_log(log: str) -> str:
+    """学習ログを記録する。logは文字列で、学習した内容や感想などを含む。
+    「〇〇を学習ログを記録して」のように、
+    学習の記録を残すように言われたときに使う。
+    """
+    if log == "":
+        return json.dumps({"error": "学習ログに登録する内容が空です。"}, ensure_ascii=False)
+    try:
+        log_path = DATA_DIR / "learning_log" / "learning_log.md"
+        log_path.parent.mkdir(parents=True, exist_ok=True)  # ディレクトリがなければ作る
+        with open(log_path, "a", encoding="utf-8") as f:
+            date = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d")
+            f.write(f"[{date}] {log}\n")
+        return json.dumps({"message": f"{log_path}に学習ログを記録しました。"}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": f"学習ログの記録中にエラーが発生しました: {str(e)}"}, ensure_ascii=False)
