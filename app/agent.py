@@ -85,6 +85,7 @@ FULL_CONTEXT_PROMPT = "<資料>\n{materials}\n</資料>\n\n質問: {question}"
 
 # モデルは実行時に渡す（テストではAPIを呼ばない TestModel に差し替えるため）
 agent = Agent(instructions=INSTRUCTIONS, output_type=[str, DeferredToolRequests])
+agent.tool_plain(tools.search_materials)
 agent.tool_plain(tools.search_glossary)
 agent.tool_plain(tools.get_lecture_summary)
 
@@ -218,7 +219,7 @@ def main() -> None:
 
         started = perf_counter()
         try:
-          model = build_model()
+            model = build_model()
             if args.full_context:
                 result = run_full_context(
                     target, args.question, model,
@@ -227,21 +228,21 @@ def main() -> None:
             else:
                 result = target.run_sync(args.question, model=model)
                 while isinstance(result.output, DeferredToolRequests):
-                  approvals = {}
-                  for call in result.output.approvals:
-                    print(f"\n承認待ちのツール呼び出し: {call.tool_name}({call.args})")
-                    answer = input("このツールの実行を承認しますか？ [y/N]: ").strip().casefold()
-                    if answer not in {"y", "yes"}:
-                      print("ツールの実行を中止しました。")
-                      return
-                    approvals[call.tool_call_id] = True
+                    approvals = {}
+                    for call in result.output.approvals:
+                        print(f"\n承認待ちのツール呼び出し: {call.tool_name}({call.args})")
+                        answer = input("このツールの実行を承認しますか？ [y/N]: ").strip().casefold()
+                        if answer not in {"y", "yes"}:
+                            print("ツールの実行を中止しました。")
+                            return
+                        approvals[call.tool_call_id] = True
 
-                result = target.run_sync(
-                  message_history=result.all_messages(),
-                  deferred_tool_results=DeferredToolResults(approvals=approvals),
-                  model=model,
-                )
-                
+                    result = target.run_sync(
+                        message_history=result.all_messages(),
+                        deferred_tool_results=DeferredToolResults(approvals=approvals),
+                        model=model,
+                    )
+
         except ModelHTTPError as e:
             print(api_error_message(e.status_code, str(e.body)[:200]))
             raise SystemExit(1)

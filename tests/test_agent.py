@@ -11,7 +11,7 @@ from pydantic_ai import DeferredToolRequests
 from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 from pydantic_ai.models.test import TestModel
 
-from app.agent import agent
+from app.agent import agent, main
 
 BASE_TOOLS = {"search_materials"}
 
@@ -46,3 +46,12 @@ def test_material_result_reaches_the_model(monkeypatch):
     returns = _parts(result, ToolReturnPart)
     assert returns and returns[0].tool_name == "search_materials"
     assert json.loads(returns[0].content)["results"] == [hit]
+
+
+def test_main_does_not_resume_when_no_tool_approval_is_pending(monkeypatch, capsys):
+    monkeypatch.setattr("sys.argv", ["agent", "こんにちは"])
+    monkeypatch.setattr("app.agent.build_model", lambda: TestModel(call_tools=[]))
+
+    main()
+
+    assert "[model]" in capsys.readouterr().out
